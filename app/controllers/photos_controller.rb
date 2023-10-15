@@ -1,6 +1,9 @@
 class PhotosController < ApplicationController
   before_action :set_photo, only: %i[ show edit update destroy ]
   before_action :ensure_current_user_is_owner, only: [:destroy, :update, :edit]
+  # See def show with pundit but keep for notes:
+  before_action :ensure_user_is_authorized, only: [:show]
+
 
   private
   # Use callbacks to share common setup or constraints between actions.
@@ -12,6 +15,11 @@ class PhotosController < ApplicationController
     if current_user != @photo.owner
       redirect_back fallback_location: root_url, alert: "You're not authorized for that."
     end
+    
+  def ensure_user_is_authorized
+    if !PhotoPolicy.new(current_user, @photo).show?
+      raise Pundit::NotAuthorizedError, "not allowed"
+    end
   end
 
   # GET /photos or /photos.json
@@ -21,6 +29,7 @@ class PhotosController < ApplicationController
 
   # GET /photos/1 or /photos/1.json
   def show
+    authorize @photo
   end
 
   # GET /photos/new
